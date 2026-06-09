@@ -1,12 +1,6 @@
 ---
 name: ziwei-doushu
-description: >
-  紫微斗数专业排盘与解盘技能。当用户提到紫微斗数、紫微排盘、紫微命盘、命宫、
-  十二宫、主星、四化、大限、流年、斗数格局、飞星、三方四正、紫微星、天机星、
-  太阳星、武曲星、天同星、廉贞星、天府星、太阴星、贪狼星、巨门星、天相星、
-  天梁星、七杀星、破军星等相关内容时触发此技能。也适用于用户想了解自己的命运、
-  性格、事业、婚姻、财运等，且明确要求或暗示使用紫微斗数体系的场景。包含完整的
-  排盘、宫位解读、四化分析、大限流年推演等能力。
+description: Professional Ziwei Doushu consultation skill with offline, Beijing-standard calculation rules. Use when the user wants a polished Ziwei report from birth date and time, including life palace structure, twelve palaces, four transformations, major luck cycles, yearly triggers, optional chart images, and a clear split between chart facts and traditional interpretation.
 ---
 
 # 紫微斗数大师技能
@@ -19,6 +13,56 @@ Read:
 - `references/stars.md`
 - `references/sihua.md`
 - `references/patterns.md`
+- `references/mapping.md`
+- `references/interpretation-framework.md`
+
+## 排盘脚本
+
+**必须用脚本排盘，不要 LLM 心算。**
+
+### Wrapper 脚本（推荐）
+
+```bash
+python3 scripts/run_ziwei.py \
+  --date 1990-10-21 \
+  --time 15:30 \
+  --gender female \
+  --year 2026 \
+  --engine dual \
+  --template pro \
+  --format markdown
+```
+
+Wrapper 首次运行时会自动创建 `.venv` 并安装依赖。
+
+### 直接调用
+
+```bash
+python ziwei-doushu/scripts/ziwei_chart.py \
+  --date 1990-10-21 \
+  --time 15:30 \
+  --gender female \
+  --year 2026 \
+  --engine dual \
+  --template pro \
+  --format markdown
+```
+
+### 常用参数
+
+- `--engine py|js|dual`：primary / fallback / dual-check
+- `--template lite|pro|executive`：输出密度
+- `--chart none|svg|jpg`：图表渲染模式
+- `--chart-quality 1-100`：JPG 质量，默认 `92`
+- `--chart-backend auto|cairosvg`：离线后端
+- `--format markdown|json`：最终输出格式
+
+### 默认标准
+
+- Timezone: `Asia/Shanghai`
+- Longitude: `120.0`
+- Default engine: `py`
+- Optional chart export: `jpg` when supported, otherwise text-only output remains valid
 
 ## 核心规则
 
@@ -103,46 +147,19 @@ Read:
 - 子时是否换日要主动说明。
 - 若用户只记得"凌晨""傍晚"等模糊时间，要把不确定性带入结论，不假装精确。
 
-### 第二步：排盘
+### 第二步：排盘（使用脚本）
 
-排盘必须逐步完成，不要跳步：
+**排盘必须使用脚本**，不要 LLM 心算：
 
-#### 2.1 定命宫、身宫与十二宫
+```bash
+python3 scripts/run_ziwei.py \
+  --date YYYY-MM-DD --time HH:MM --gender male|female \
+  --format markdown --template pro
+```
 
-- 按 `references/calculation.md` 的定命宫、定身宫口诀操作。
-- 命宫确定后，再逆时针布十二宫。
-- 若时辰不确定，可给出 1 到 2 个最可能时辰的差异盘，不要硬定。
+如果脚本不可用，明确告知用户当前版本需要脚本才能正式排盘，不要手算顶替。
 
-#### 2.2 起寅首并定五行局
-
-- 先用起寅首定各宫宫干。
-- 再以命宫宫干地支定五行局。
-- 五行局是后续起紫微星和定大限起始年龄的基础。
-
-#### 2.3 安十四主星
-
-- 先起紫微星，再按紫微星系排天机、太阳、武曲、天同、廉贞。
-- 再按天府星诀定天府位置，并顺排太阴、贪狼、巨门、天相、天梁、七杀、破军。
-- **不要先背格局名反推星曜位置。**
-
-#### 2.4 安辅星、煞星与杂曜
-
-- 先安文昌、文曲、左辅、右弼、魁钺、禄存、羊陀、火铃、空劫、天马。
-- 再按需要安乙级星和常用杂曜。
-- 若用户只求简盘，可先展示主星、甲级辅星、四化、大限。
-
-#### 2.5 安四化
-
-- 默认采用 `references/sihua.md` 的生年四化表。
-- 分清本命四化、大限四化、流年四化，不要混在一起说。
-
-#### 2.6 定大限
-
-- 以五行局定起限年龄。
-- 以性别和出生年阴阳定顺逆行。
-- 若用户问流年，先定当前大限，再叠加流年，不要跳过大限。
-
-#### 2.7 自检
+#### 手动校核要点
 
 排盘完成后至少做一次校核：
 
@@ -270,6 +287,36 @@ Read:
 4. 人际/情感提醒
 5. 如果用户问某段时间，再给阶段性运势摘要
 
+## Deliverables
+
+A strong output should include:
+1. Calculation standard (timezone / longitude / unified calculation time)
+2. Chart facts
+   - 命宫 / 身宫
+   - 十二宫
+   - 主星组合
+   - 三方四正
+   - 四化
+   - 大限 / 流年触发
+3. Interpretation framework
+   - what the structure suggests
+   - where the reading is robust
+   - where timing sensitivity matters
+4. Practical summary
+   - career
+   - relationships
+   - money
+   - health / energy management
+   - current-year focus and risk boundary
+
+## Output Style Guardrails
+
+- Separate **chart facts** from **traditional interpretation**.
+- Present conclusions as trend / structure, not deterministic destiny claims.
+- Make method transparency part of the deliverable.
+- If dual-engine results differ, surface the discrepancy instead of hiding it.
+- If chart export fails, continue with the report.
+
 ## 回应风格
 
 - 先问清，再分析；不要为了显得流畅而跳过关键追问。
@@ -285,6 +332,21 @@ Read:
 - 问寿命：不直接论寿夭，转为健康习惯和阶段性风险提醒。
 - 合盘：先分别排两张盘，再谈互动结构，不直接下"合/不合"的绝对结论。
 
+## Scope Boundary
+
+- Offline only; no network dependency.
+- Produce interpretive analysis only; not medical, legal, or financial advice.
+- Optional image export should enhance delivery, not gate it.
+
+## References
+
+- `references/calculation.md`：排盘规则
+- `references/stars.md`：星曜说明
+- `references/sihua.md`：四化表
+- `references/patterns.md`：格局说明
+- `references/mapping.md`：映射参考
+- `references/interpretation-framework.md`：解读框架
+
 ## 结尾提醒
 
 每次完整解盘后附上：
@@ -293,4 +355,4 @@ Read:
 
 ---
 
-*紫微斗数技能 v1.0 - 基于 FANzR-arch/Numerologist_skills*
+*紫微斗数技能 v2.0 — 脚本排盘 + 结构化解读 + 双引擎校验*
